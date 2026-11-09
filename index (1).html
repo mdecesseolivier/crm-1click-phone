@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1a26">
+<title>Prospection</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{--bg:#eceff2;--card:#fff;--tx:#0f1a24;--mu:#5b6976;--bd:#d9dfe5;--call:#0b7a4b;--calltx:#fff;--bar:#0c1a26;--ac:#1859c9}
+@media(prefers-color-scheme:dark){:root{--bg:#0c1319;--card:#16212b;--tx:#e8eef3;--mu:#8fa0ae;--bd:#263544;--call:#2fc27d;--calltx:#04230f;--bar:#060b10;--ac:#6ea2ff}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button,select,input,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--bar);display:flex;gap:4px;padding:8px 10px}
+.top button{flex:1;background:none;border:0;color:#9fb2c2;padding:10px;border-radius:10px;font-weight:600}
+.top button[aria-selected=true]{background:#1d3347;color:#fff}
+main{padding:12px;max-width:720px;margin:0 auto}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.btn{display:inline-block;border:1px solid var(--bd);background:var(--card);padding:9px 14px;border-radius:10px;font-weight:600;text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+input[type=file]{display:none}
+#scr{width:100%;height:calc(100dvh - 190px);min-height:280px;resize:none;border:1px solid var(--bd);border-radius:12px;background:var(--card);padding:14px;line-height:1.6;font-size:18px}
+.sp{flex:1}
+.stat{color:var(--mu);font-size:14px}
+select,.q{border:1px solid var(--bd);background:var(--card);padding:9px 10px;border-radius:10px}
+.q{flex:1;min-width:120px}
+.cols{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:14px;color:var(--mu)}
+.cols label{display:flex;gap:6px;align-items:center}
+.card{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 10px 10px 14px;margin-bottom:8px;cursor:pointer}
+.m{flex:1;min-width:0;display:flex;flex-direction:column}
+.m b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph{color:var(--mu);font-size:14px}
+.cm{font-size:13px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.b{font-size:12px;font-weight:700;padding:3px 8px;border-radius:99px;color:var(--c);border:1.5px solid var(--c);white-space:nowrap}
+.call{background:var(--call);color:var(--calltx);text-decoration:none;font-weight:700;padding:12px 16px;border-radius:12px;white-space:nowrap}
+.call.big{display:block;text-align:center;font-size:20px;padding:16px;margin:10px 0}
+.empty{color:var(--mu);text-align:center;padding:40px 10px}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+#sheet[hidden]{display:none}
+.sh{background:var(--card);width:100%;max-width:720px;max-height:92dvh;overflow:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sh-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sh-h b{font-size:20px}
+.x{border:0;background:var(--bg);width:38px;height:38px;border-radius:50%;font-size:18px}
+.info{color:var(--mu);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{border:1.5px solid var(--c);color:var(--c);background:none;padding:10px 14px;border-radius:99px;font-weight:700}
+.chip.on{background:var(--c);color:#fff}
+#cm{width:100%;min-height:90px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);padding:10px;resize:vertical}
+#rdv{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#rdv input{flex:1;min-width:180px;border:1px solid var(--bd);background:var(--bg);padding:9px;border-radius:10px}
+.row{display:flex;gap:8px;margin-top:14px}
+.row .btn{flex:1;text-align:center}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+</style>
+</head>
+<body>
+<nav class="top" role="tablist">
+  <button role="tab" id="t1" aria-selected="true">Script</button>
+  <button role="tab" id="t2" aria-selected="false">Prospects</button>
+</nav>
+
+<main>
+<section id="p1">
+  <div class="bar">
+    <label class="btn pri" for="fs">Importer un script</label>
+    <input type="file" id="fs" accept=".pdf,.docx,.txt,.md">
+    <span class="sp"></span>
+    <button class="btn" id="fm" aria-label="Réduire le texte">A−</button>
+    <button class="btn" id="fp" aria-label="Agrandir le texte">A+</button>
+  </div>
+  <textarea id="scr" placeholder="Importe un PDF, un Word, un .md ou un .txt, ou colle ton texte ici."></textarea>
+</section>
+
+<section id="p2" hidden>
+  <div class="bar">
+    <label class="btn pri" for="fp2">Importer la liste</label>
+    <input type="file" id="fp2" accept=".xlsx,.xls,.csv,.tsv,.md,.txt">
+    <span class="sp"></span>
+    <button class="btn" id="exp">Exporter</button>
+  </div>
+  <div class="cols" id="cols" hidden>
+    <label>Téléphone <select id="cp"></select></label>
+    <label>Entreprise <select id="cc"></select></label>
+  </div>
+  <div class="bar">
+    <input class="q" id="q" type="search" placeholder="Rechercher">
+    <select id="flt"></select>
+  </div>
+  <div class="stat" id="stat" style="margin-bottom:8px"></div>
+  <div id="list"></div>
+</section>
+</main>
+
+<div id="sheet" hidden>
+  <div class="sh" role="dialog" aria-modal="true" aria-labelledby="sn">
+    <div class="sh-h"><b id="sn"></b><button class="x" id="x" aria-label="Fermer">✕</button></div>
+    <div class="info" id="sinfo"></div>
+    <a class="call big" id="scall">Appeler</a>
+    <div class="chips" id="chips"></div>
+    <textarea id="cm" placeholder="Commentaire : ce que le contact a dit, rendez-vous, rappel…"></textarea>
+    <div id="rdv" hidden>
+      <input type="datetime-local" id="dt" aria-label="Date et heure du rendez-vous">
+      <a class="btn" id="gcal" target="_blank" rel="noopener">Ajouter à Google Agenda</a>
+    </div>
+    <div class="row">
+      <button class="btn" id="next">Suivant</button>
+      <button class="btn pri" id="done">Terminé</button>
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const $=s=>document.querySelector(s);
+const STS=["Ne répond pas","Absent","Répondeur","Rappeler","Rendez-vous pris","Pas intéressé","Mauvais numéro"];
+const COL={"Ne répond pas":"#7b8794","Absent":"#b86e00","Répondeur":"#7a55d1","Rappeler":"#1859c9","Rendez-vous pris":"#0b7a4b","Pas intéressé":"#c0392b","Mauvais numéro":"#555e66"};
+const S={script:"",fs:18,headers:[],rows:[],pc:-1,cc:-1,pending:null,filter:"all",q:""};
+let cur=-1;
+
+/* ---------- stockage ---------- */
+function save(){try{localStorage.setItem("prosp1",JSON.stringify({script:S.script,fs:S.fs,headers:S.headers,rows:S.rows,pc:S.pc,cc:S.cc,pending:S.pending}))}catch(e){}}
+try{Object.assign(S,JSON.parse(localStorage.getItem("prosp1")||"{}"))}catch(e){}
+
+/* ---------- numéros français ---------- */
+function norm(v){
+  let s=String(v==null?"":v).trim().replace(/\(0\)/g,"");
+  if(!s)return null;
+  const plus=s[0]==="+";
+  let d=s.replace(/\D/g,"");
+  if(!d)return null;
+  if(plus&&!d.startsWith("33"))return d.length>=8&&d.length<=15?"+"+d:null;
+  if(d.startsWith("0033"))d=d.slice(2);
+  if(d.startsWith("330")&&d.length===12)d="33"+d.slice(3);
+  if(d.startsWith("33")&&d.length===11)return "+"+d;
+  if(d.length===10&&d[0]==="0")return "+33"+d.slice(1);
+  if(d.length===9&&/^[1-9]/.test(d))return "+33"+d;
+  return null;
+}
+function fmt(p){return p.startsWith("+33")?"+33 "+p[3]+" "+p.slice(4).replace(/(\d\d)(?=\d)/g,"$1 "):p}
+const esc=t=>String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- lecture des fichiers ---------- */
+async function readScript(f){
+  const n=f.name.toLowerCase(),buf=await f.arrayBuffer();
+  if(n.endsWith(".pdf")){
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;let out="";
+    for(let i=1;i<=pdf.numPages;i++){
+      const c=await(await pdf.getPage(i)).getTextContent();
+      out+=c.items.map(t=>t.str+(t.hasEOL?"\n":" ")).join("")+"\n\n";
+    }
+    return out.trim();
+  }
+  if(n.endsWith(".docx"))return(await mammoth.extractRawText({arrayBuffer:buf})).value.trim();
+  return new TextDecoder().decode(buf);
+}
+function mdTable(txt){
+  return txt.split(/\r?\n/).filter(l=>l.includes("|")&&!/^\s*\|?[\s:\-|]+\|?\s*$/.test(l))
+    .map(l=>l.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim()));
+}
+async function readTable(f){
+  const n=f.name.toLowerCase(),buf=await f.arrayBuffer();
+  let rows;
+  if(n.endsWith(".md")||n.endsWith(".txt")){
+    rows=mdTable(new TextDecoder().decode(buf));
+    if(!rows.length)throw new Error("Aucun tableau trouvé dans ce fichier.");
+  }else{
+    const wb=XLSX.read(buf,{type:"array",raw:false});
+    rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:""});
+  }
+  rows=rows.filter(r=>r.some(c=>String(c).trim()!==""));
+  if(!rows.length)throw new Error("Le fichier est vide.");
+  const w=Math.max(...rows.map(r=>r.length));
+  rows=rows.map(r=>Array.from({length:w},(_,i)=>String(r[i]==null?"":r[i]).trim()));
+  const firstHasPhone=rows[0].some(c=>norm(c));
+  let headers;
+  if(firstHasPhone)headers=rows[0].map((_,i)=>"Colonne "+(i+1));
+  else headers=rows.shift();
+  S.headers=headers.map((h,i)=>h||"Colonne "+(i+1));
+  S.rows=rows.map(d=>({d,st:"",cm:"",rdv:""}));
+  detect();
+}
+function detect(){
+  const w=S.headers.length;let best=-1,bs=0;
+  for(let c=0;c<w;c++){
+    const vals=S.rows.map(r=>r.d[c]).filter(Boolean);
+    let ok=vals.filter(v=>norm(v)).length/(vals.length||1);
+    if(/t[ée]l|phone|mobile|portable|num/i.test(S.headers[c]))ok+=.3;
+    if(ok>bs){bs=ok;best=c}
+  }
+  S.pc=best;
+  let cc=S.headers.findIndex((h,i)=>i!==best&&/entreprise|soci[ée]t[ée]|company|raison|nom/i.test(h));
+  if(cc<0)cc=S.headers.findIndex((_,i)=>i!==best);
+  S.cc=cc;
+}
+
+/* ---------- affichage ---------- */
+const nameOf=r=>(S.cc>=0&&r.d[S.cc])||r.d.find((v,i)=>i!==S.pc&&v)||"Sans nom";
+function opts(sel,cur2){sel.innerHTML=S.headers.map((h,i)=>`<option value="${i}"${i===cur2?" selected":""}>${esc(h)}</option>`).join("")}
+function render(){
+  $("#cols").hidden=!S.rows.length;
+  if(S.rows.length){opts($("#cp"),S.pc);opts($("#cc"),S.cc)}
+  const f=$("#flt");
+  f.innerHTML='<option value="all">Tous</option><option value="todo">À appeler</option>'+STS.map(s=>`<option>${s}</option>`).join("");
+  f.value=S.filter;
+  list();
+}
+function list(){
+  const el=$("#list");
+  if(!S.rows.length){el.innerHTML='<p class="empty">Importe ta liste de prospects (Excel, CSV ou tableau Markdown) pour commencer.</p>';$("#stat").textContent="";return}
+  const q=S.q.toLowerCase(),out=[];
+  S.rows.forEach((r,i)=>{
+    if(S.filter==="todo"&&r.st)return;
+    if(S.filter!=="all"&&S.filter!=="todo"&&r.st!==S.filter)return;
+    if(q&&!r.d.join(" ").toLowerCase().includes(q))return;
+    const p=norm(r.d[S.pc]);
+    out.push(`<div class="card" data-i="${i}"><div class="m"><b>${esc(nameOf(r))}</b><span class="ph">${p?fmt(p):esc(r.d[S.pc]||"Pas de numéro")}</span>${r.cm?`<span class="cm">${esc(r.cm)}</span>`:""}</div>${r.st?`<span class="b" style="--c:${COL[r.st]}">${r.st}</span>`:""}${p?`<a class="call" href="tel:${p}" data-i="${i}">Appeler</a>`:""}</div>`);
+  });
+  el.innerHTML=out.join("")||'<p class="empty">Aucun prospect ne correspond.</p>';
+  const done=S.rows.filter(r=>r.st).length;
+  $("#stat").textContent=done+" traités sur "+S.rows.length;
+}
+
+/* ---------- fiche prospect ---------- */
+function openSheet(i){
+  cur=i;const r=S.rows[i],p=norm(r.d[S.pc]);
+  $("#sn").textContent=nameOf(r);
+  $("#sinfo").textContent=S.headers.map((h,k)=>k===S.pc||k===S.cc||!r.d[k]?"":h+" : "+r.d[k]).filter(Boolean).slice(0,4).join("  |  ")||(p?fmt(p):"");
+  const a=$("#scall");
+  if(p){a.href="tel:"+p;a.dataset.i=i;a.textContent="Appeler "+fmt(p);a.style.display=""}else a.style.display="none";
+  $("#cm").value=r.cm;
+  $("#dt").value=r.rdv;
+  chips();gcal();
+  $("#sheet").hidden=false;
+}
+function chips(){
+  const r=S.rows[cur];
+  $("#chips").innerHTML=STS.map(s=>`<button class="chip${r.st===s?" on":""}" style="--c:${COL[s]}" data-s="${s}">${s}</button>`).join("");
+  $("#rdv").hidden=r.st!=="Rendez-vous pris";
+}
+function gcal(){
+  const r=S.rows[cur],a=$("#gcal");
+  if(!r.rdv){a.removeAttribute("href");a.style.opacity=".5";return}
+  a.style.opacity="1";
+  const s=new Date(r.rdv),e=new Date(s.getTime()+30*60000),p=n=>String(n).padStart(2,"0");
+  const f=d=>d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"T"+p(d.getHours())+p(d.getMinutes())+"00";
+  const ph=norm(r.d[S.pc]);
+  a.href="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("RDV – "+nameOf(r))+"&dates="+f(s)+"/"+f(e)+"&details="+encodeURIComponent((r.cm?r.cm+"\n":"")+(ph?"Tél : "+fmt(ph):""));
+}
+function closeSheet(){$("#sheet").hidden=true;cur=-1;list()}
+
+/* ---------- événements ---------- */
+function tab(n){
+  $("#p1").hidden=n!==1;$("#p2").hidden=n!==2;
+  $("#t1").setAttribute("aria-selected",n===1);$("#t2").setAttribute("aria-selected",n===2);
+}
+$("#t1").onclick=()=>tab(1);$("#t2").onclick=()=>tab(2);
+
+$("#scr").value=S.script;
+$("#scr").style.fontSize=S.fs+"px";
+$("#scr").oninput=e=>{S.script=e.target.value;save()};
+function size(d){S.fs=Math.min(40,Math.max(12,S.fs+d));$("#scr").style.fontSize=S.fs+"px";save()}
+$("#fm").onclick=()=>size(-2);$("#fp").onclick=()=>size(2);
+
+$("#fs").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{S.script=await readScript(f);$("#scr").value=S.script;save()}
+  catch(err){alert("Impossible de lire ce script : "+err.message)}
+  e.target.value="";
+};
+$("#fp2").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{await readTable(f);save();render()}
+  catch(err){alert("Impossible de lire cette liste : "+err.message)}
+  e.target.value="";
+};
+$("#cp").onchange=e=>{S.pc=+e.target.value;save();list()};
+$("#cc").onchange=e=>{S.cc=+e.target.value;save();list()};
+$("#q").oninput=e=>{S.q=e.target.value;list()};
+$("#flt").onchange=e=>{S.filter=e.target.value;list()};
+
+document.addEventListener("click",e=>{
+  const a=e.target.closest("a.call");
+  if(a){S.pending=+a.dataset.i;save();e.stopPropagation();return}
+  const c=e.target.closest(".card");
+  if(c)openSheet(+c.dataset.i);
+});
+$("#chips").onclick=e=>{
+  const b=e.target.closest(".chip");if(!b)return;
+  const r=S.rows[cur];r.st=r.st===b.dataset.s?"":b.dataset.s;save();chips();
+};
+$("#cm").oninput=e=>{S.rows[cur].cm=e.target.value;save();gcal()};
+$("#dt").onchange=e=>{S.rows[cur].rdv=e.target.value;save();gcal()};
+$("#x").onclick=closeSheet;$("#done").onclick=closeSheet;
+$("#next").onclick=()=>{
+  let n=S.rows.findIndex((r,i)=>i>cur&&!r.st&&norm(r.d[S.pc]));
+  if(n<0)n=S.rows.findIndex(r=>!r.st&&norm(r.d[S.pc]));
+  if(n<0){closeSheet();return}
+  list();openSheet(n);
+};
+
+/* retour dans l’appli après l’appel : la fiche s’ouvre toute seule */
+function back(){
+  if(S.pending==null||document.visibilityState==="hidden")return;
+  const i=S.pending;S.pending=null;save();
+  if(S.rows[i]){tab(2);openSheet(i)}
+}
+document.addEventListener("visibilitychange",back);
+window.addEventListener("pageshow",back);
+window.addEventListener("focus",back);
+
+$("#exp").onclick=()=>{
+  if(!S.rows.length){alert("Aucune liste à exporter.");return}
+  const data=[[...S.headers,"Statut","Commentaire","RDV"],...S.rows.map(r=>[...r.d,r.st,r.cm,r.rdv.replace("T"," ")])];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"Prospects");
+  XLSX.writeFile(wb,"prospects-suivi.xlsx");
+};
+
+render();
+if(S.rows.length)tab(2);
+back();
+</script>
+</body>
+</html>
